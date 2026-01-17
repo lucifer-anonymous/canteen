@@ -1,11 +1,8 @@
 // This file is the entry point for the application
-// It's imported by register-aliases.ts which sets up module aliases
-import 'tsconfig-paths/register';
-
-import app from '@/app';
-import config from '@/config/config';
-import logger from '@/utils/logger';
-import connectDB from '@/config/db';
+import app from './app';
+import config from './config/config';
+import logger from './utils/logger';
+import connectDB from './config/db';
 
 const PORT = config.port || 5000;
 

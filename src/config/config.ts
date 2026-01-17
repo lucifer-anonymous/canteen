@@ -11,6 +11,7 @@ const env = cleanEnv(process.env, {
   JWT_SECRET: str(),
   JWT_EXPIRES_IN: str({ default: '7d' }),
   LOG_LEVEL: str({ choices: ['error', 'warn', 'info', 'http', 'verbose', 'debug', 'silly'], default: 'info' }),
+  CORS_ORIGIN: str({ default: '' }),
   FRONTEND_URL: str({ default: '' }),
   SMTP_HOST: str({ default: '' }),
   SMTP_PORT: str({ default: '' }),
@@ -26,6 +27,7 @@ const config = {
   jwtSecret: env.JWT_SECRET,
   jwtExpiresIn: env.JWT_EXPIRES_IN,
   logLevel: env.LOG_LEVEL,
+  corsOrigin: env.CORS_ORIGIN,
   frontendUrl: env.FRONTEND_URL,
   smtp: {
     host: env.SMTP_HOST,

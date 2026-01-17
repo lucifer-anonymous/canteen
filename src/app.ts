@@ -30,6 +30,12 @@ const allowedOrigins = [
   'http://10.82.240.229:5173'
 ];
 
+// Add production CORS origin from environment variable
+if (config.corsOrigin) {
+  const productionOrigins = config.corsOrigin.split(',').map((origin: string) => origin.trim());
+  allowedOrigins.push(...productionOrigins);
+}
+
 // Skip authentication for specific paths
 const skipAuthPaths = [
   '/api/v1/student/register',
@@ -44,17 +50,17 @@ const skipAuthPaths = [
 const corsOptions = {
   origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
     // Allow all origins in development
-    if (process.env.NODE_ENV === 'development') {
+    if (config.nodeEnv === 'development') {
       return callback(null, true);
     }
     
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    // In production, only allow specific origins
+    // In production, check if origin is in allowed list
     if (allowedOrigins.indexOf(origin) === -1) {
       const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
-      console.warn(msg);
+      logger.warn(msg);
       return callback(new Error(msg), false);
     }
     return callback(null, true);
