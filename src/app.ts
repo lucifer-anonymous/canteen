@@ -28,6 +28,7 @@ const allowedOrigins = [
   'http://127.0.0.1:8081',
   'http://10.82.240.229:8080',
   'http://10.82.240.229:5173'
+  'https://cns-lime.vercel.app'
 ];
 
 // Add production CORS origin from environment variable
