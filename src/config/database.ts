@@ -56,7 +56,7 @@ export async function connectToDatabase(): Promise<Connection> {
       tlsAllowInvalidCertificates: false,
     };
 
-    await mongoose.connect(MONGO_URI, options);
+    await mongoose.connect(MONGO_URI as string, options);
     
     return mongoose.connection;
   } catch (error) {

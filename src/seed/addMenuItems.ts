@@ -7,8 +7,8 @@ dotenv.config({ path: path.join(__dirname, '../../.env.test') });
 
 // Simple logger
 const logger = {
-  info: (message) => console.log(`[INFO] ${message}`),
-  error: (message) => console.error(`[ERROR] ${message}`)
+  info: (message: string) => console.log(`[INFO] ${message}`),
+  error: (message: string) => console.error(`[ERROR] ${message}`)
 };
 
 // Import models
@@ -35,7 +35,7 @@ async function addMenuItems() {
     }
 
     // Map category names to their IDs
-    const categoryMap = categories.reduce((acc, category) => {
+    const categoryMap = categories.reduce((acc: any, category: any) => {
       acc[category.name.toLowerCase()] = category._id;
       return acc;
     }, {});
@@ -147,7 +147,7 @@ async function addMenuItems() {
     logger.info(`Added ${addedCount} new menu items`);
     logger.info('Menu items addition completed successfully');
     
-  } catch (error) {
+  } catch (error: any) {
     logger.error(`Error adding menu items: ${error.message}`);
     console.error(error);
     process.exit(1);
