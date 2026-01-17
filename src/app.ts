@@ -103,7 +103,9 @@ app.use('/api/v1/admin-auth', adminAuthRoutes);
 // Protected routes (require authentication)
 app.use((req, res, next) => {
   // Skip authentication for specific paths
-  if (skipAuthPaths.some(path => req.path.startsWith(path))) {
+  // Use req.originalUrl or req.url instead of req.path to get the full path
+  const fullPath = req.originalUrl || req.url;
+  if (skipAuthPaths.some(path => fullPath.startsWith(path))) {
     return next();
   }
   // Apply authentication middleware to all other routes
