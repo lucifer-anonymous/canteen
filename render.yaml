@@ -1,0 +1,29 @@
+services:
+  # Backend API Service
+  - type: web
+    name: canteen-backend
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: CORS_ORIGIN
+        sync: false
+
+databases:
+  # MongoDB Database
+  - name: canteen-mongodb
+    plan: free
+    databaseName: canteen
+    user: canteen_user
