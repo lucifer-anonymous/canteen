@@ -1,6 +1,9 @@
-const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-const path = require('path');
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+import path from 'path';
+import Category from '../models/category.model';
+import MenuItem from '../models/menuItem.model';
+import Inventory from '../models/inventory.model';
 
 // Load environment variables from .env file
 dotenv.config({ path: path.join(__dirname, '../../.env.test') });
@@ -10,10 +13,6 @@ const logger = {
   info: (message: string) => console.log(`[INFO] ${message}`),
   error: (message: string) => console.error(`[ERROR] ${message}`)
 };
-
-// Import models
-const Category = require('../models/category.model');
-const MenuItem = require('../models/menuItem.model');
 
 async function addMenuItems() {
   const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/canteen_test';
@@ -131,21 +130,38 @@ async function addMenuItems() {
       }
     ];
 
-    // Add menu items
+    // Add menu items and inventory
     let addedCount = 0;
+    let inventoryCount = 0;
     for (const item of newMenuItems) {
-      const existingItem = await MenuItem.findOne({ name: item.name });
-      if (!existingItem) {
-        await MenuItem.create(item);
+      let menuItem = await MenuItem.findOne({ name: item.name });
+      if (!menuItem) {
+        menuItem = await MenuItem.create(item);
         logger.info(`Added menu item: ${item.name}`);
         addedCount++;
       } else {
         logger.info(`Menu item already exists: ${item.name}`);
       }
+      
+      // Ensure inventory exists for this menu item
+      let inventory = await Inventory.findOne({ menuItem: menuItem._id });
+      if (!inventory) {
+        inventory = await Inventory.create({
+          menuItem: menuItem._id,
+          quantity: 50, // Default quantity
+          lowStockThreshold: 10,
+          unit: 'pcs'
+        });
+        logger.info(`Created inventory for: ${item.name} (quantity: 50)`);
+        inventoryCount++;
+      } else {
+        logger.info(`Inventory already exists for: ${item.name}`);
+      }
     }
 
     logger.info(`Added ${addedCount} new menu items`);
-    logger.info('Menu items addition completed successfully');
+    logger.info(`Created ${inventoryCount} new inventory records`);
+    logger.info('Menu items and inventory setup completed successfully');
     
   } catch (error: any) {
     logger.error(`Error adding menu items: ${error.message}`);

@@ -18,6 +18,9 @@ router.post('/orders', async (req: Request, res: Response) => {
     const user = (req as any).user as { sub: string };
     const { notes, items: cartItems } = (req.body || {}) as { notes?: string; items?: any[] };
 
+    console.log('🔍 Order request body:', JSON.stringify(req.body, null, 2));
+    console.log('🔍 Cart items received:', cartItems);
+
     // Accept cart items from request body (for frontend local cart)
     // or fall back to database cart
     let cart;
@@ -25,14 +28,44 @@ router.post('/orders', async (req: Request, res: Response) => {
     
     if (cartItems && cartItems.length > 0) {
       // Using cart items from request
-      items = cartItems.map((item: any) => ({
-        menuItem: item._id || item.id || item.menuItem,
-        name: item.name,
-        price: item.price,
-        qty: item.quantity || item.qty || 1,
-      }));
+      console.log('📦 Processing cart items from request body');
+      
+      // Validate and map cart items
+      const mappedItems = [];
+      for (const item of cartItems) {
+        const menuItemId = item._id || item.id || item.menuItem;
+        
+        // Validate menuItemId
+        if (!menuItemId) {
+          await session.abortTransaction();
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Invalid cart item: missing menuItem ID',
+            item: item 
+          });
+        }
+        
+        if (!isValidObjectId(menuItemId)) {
+          await session.abortTransaction();
+          return res.status(400).json({ 
+            success: false, 
+            message: `Invalid menuItem ID format: ${menuItemId}` 
+          });
+        }
+        
+        mappedItems.push({
+          menuItem: menuItemId,
+          name: item.name,
+          price: item.price,
+          qty: item.quantity || item.qty || 1,
+        });
+      }
+      
+      items = mappedItems;
+      console.log('✅ Mapped items:', items);
     } else {
       // Fall back to database cart
+      console.log('📦 Falling back to database cart');
       cart = await Cart.findOne({ user: user.sub }).session(session);
       if (!cart || cart.items.length === 0) {
         await session.abortTransaction();
@@ -59,22 +92,31 @@ router.post('/orders', async (req: Request, res: Response) => {
     }
     const ids = Array.from(reqMap.keys());
 
+    console.log('📋 Menu items to check:', ids);
+
     // Load inventories
     const inventories = await Inventory.find({ menuItem: { $in: ids } }).session(session);
+    console.log('📦 Found inventories:', inventories.length);
     const invMap = new Map(inventories.map((i) => [String(i.menuItem), i]));
 
     // Validate availability
     for (const [menuItemId, need] of reqMap.entries()) {
       const inv = invMap.get(menuItemId);
       if (!inv) {
+        console.warn(`⚠️ No inventory found for menu item: ${menuItemId}`);
         await session.abortTransaction();
-        return res.status(400).json({ success: false, message: 'Insufficient stock for one or more items' });
+        return res.status(400).json({ 
+          success: false, 
+          message: `Item not available in inventory. Please contact admin.`,
+          menuItemId 
+        });
       }
       if (inv.quantity < need) {
+        console.warn(`⚠️ Insufficient stock for ${menuItemId}: need ${need}, have ${inv.quantity}`);
         await session.abortTransaction();
         return res
           .status(400)
-          .json({ success: false, message: `Insufficient stock for item ${menuItemId}` });
+          .json({ success: false, message: `Insufficient stock. Only ${inv.quantity} available.` });
       }
     }
 
@@ -114,10 +156,16 @@ router.post('/orders', async (req: Request, res: Response) => {
     }
 
     await session.commitTransaction();
+    console.log('✅ Order created successfully:', order[0]._id);
     return res.status(201).json({ success: true, data: order[0] });
   } catch (err) {
+    console.error('❌ Error creating order:', err);
     await session.abortTransaction();
-    return res.status(500).json({ success: false, message: 'Internal Server Error' });
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Internal Server Error',
+      error: (err as Error).message 
+    });
   } finally {
     await session.endSession();
   }
